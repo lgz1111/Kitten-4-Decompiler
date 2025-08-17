@@ -67,10 +67,10 @@ class CommandLineUserInterface:
             else:
                 operations[choice]["function"]()
 
-    def askFilePath(self, message="请选择一个文件", fileTypes=(), default=None):
+    def askFilePath(self, message="请选择一个文件", fileTypes=(), default=None, initialfile:str=""):
         root = tkinter.Tk()
         root.title(message)
-        path = filedialog.askopenfilename(filetypes=fileTypes, title=message)
+        path = filedialog.askopenfilename(filetypes=fileTypes, title=message ,initialfile =initialfile)
         root.destroy()
         if default is not None and path == "":
             return default
