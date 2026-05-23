@@ -43,7 +43,7 @@ def main():
     decompiler.onClean = lambda: log(INFO, "正在写入作品信息……")
     decompiler.onFinish = lambda: log(INFO, "反编译完成。")
     decompiler.start()
-    saveSourceCode(compiledWork, workInfo["type"], workInfo["name")
+    saveSourceCode(compiledWork, workInfo["type"], workInfo["name"])
 
 def saveSourceCode(sourceCode, type, filename=""):
     input("按下回车键保存源码")
