@@ -29,7 +29,7 @@ class CommandLineUserInterface:
         if default is not None and value == "":
             return default
         return value
-                
+
     def askYesNot(self, message="确定？", default=None):
         message += "(y/n)"
         if default == True:
@@ -50,7 +50,7 @@ class CommandLineUserInterface:
                 return value - 1
             else:
                 print("输入有误，请重新输入！")
-    
+
     def operate(self, operations, default=None):
         length = len(operations)
         operations.append({
@@ -85,7 +85,7 @@ class CommandLineUserInterface:
             return default
         return path
 
-    def askSaveFilePath(self, message="请选择文件保存位置", defaultType=None, fileTypes=(), default=None, initialfile = filename):
+    def askSaveFilePath(self, message="请选择文件保存位置", defaultType=None, fileTypes=(), default=None, initialfile=""):
         root = tkinter.Tk()
         root.title(message)
         path = filedialog.asksaveasfilename(defaultextension=defaultType, filetypes=fileTypes, title=message, initialfile =initialfile)
