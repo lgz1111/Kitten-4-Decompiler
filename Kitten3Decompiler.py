@@ -46,13 +46,139 @@ class BlockDecompiler:
             next_element.append(BlockDecompiler(self.next_block).toxml())
 
         return block
-class KittenWorkDecompiler():
+
+class ActorDecompiler:
+
+    def __init__(self, work, actor, compiledBlocks) -> None:
+        self.work = work
+        self.actor = actor
+        self.compiled = compiledBlocks
+        self.blocks = {}
+        self.connections = {}
+
+    def prepare(self):
+        # 准备角色的积木数据
+        self.onPrepare()
+
+        # 将积木数据与角色关联
+        self.actor["block_data_json"] = {
+            "blocks": self.blocks,
+            "connections": self.connections,
+            "comments": {}
+        }
+
+        # 将角色中的函数添加到作品的函数集合中
+        for name, compiledFunction in self.compiled["procedures"].items():
+            self.work.functions[name] = compiledFunction
+
+    def start(self):
+        # 开始反编译角色
+        self.onStart()
+
+        # 反编译角色的所有函数
+        for name, compiledFunction in self.compiled["procedures"].items():
+            self.onStartFunction(name)
+            self.blocks[name] = self.decompileFunction(compiledFunction)
+
+        # 反编译角色的其余积木
+        for id, compiledBlock in self.compiled["compiled_block_map"].items():
+            self.blocks[id] = self.decompileBlock(compiledBlock)
+
+    def decompileFunction(self, compiledFunction):
+        # 反编译函数，返回字符串
+        self.onPrepareFunction(compiledFunction["id"])
+        decompiler = BlockDecompiler(compiledFunction)
+        return ET.tostring(decompiler.toxml(), encoding="unicode")
+
+    def decompileBlock(self, compiledBlock):
+        # 反编译单个积木，返回字符串
+        decompiler = BlockDecompiler(compiledBlock)
+        return ET.tostring(decompiler.toxml(), encoding="unicode")
+
+    # 钩子方法，提供扩展点
+    def onPrepare(self): pass
+    def onPrepareFunction(self, name): pass
+    def onStart(self): pass
+    def onStartFunction(self, name): pass
+
+class KittenWorkDecompiler:
+
     def __init__(self, workInfo, compiledWork) -> None:
         self.workInfo = workInfo
         self.work = compiledWork
         self.functions = {}
-        
-        
+
+    def start(self):
+        # 开始反编译流程
+        self.onStart()
+
+        # 创建角色反编译器
+        decompilers = []
+        for actorCompiledBlocks in self.work["compile_result"]:
+            actor = ActorDecompiler(self, self.getActor(actorCompiledBlocks["id"]), actorCompiledBlocks)
+            self.onCreateActor(actor)
+            decompilers.append(actor)
+
+        # 准备所有角色
+        self.onPrepareActors()
+        for decompiler in decompilers:
+            decompiler.prepare()
+
+        # 开始反编译所有角色
+        self.onStartActors()
+        for decompiler in decompilers:
+            decompiler.start()
+
+        # 写入作品信息
+        self.writeWorkInfo()
+
+        # 清理不必要的数据
+        self.clean()
+
+        # 完成反编译
+        self.onFinish()
+        return self.work
+
+    def getActor(self, actorID):
+        # 获取角色或场景信息
+        theatre = self.work["theatre"]
+        try:
+            return theatre["actors"][actorID]
+        except KeyError:
+            return theatre["scenes"][actorID]
+
+    def clean(self):
+        # 清理不必要的字段
+        self.onClean()
+        for key in {"compile_result", "preview", "author_nickname"}:
+            self.work.pop(key, None)
+
+    def writeWorkInfo(self):
+        # 写入作品信息
+        self.onWriteWorkInfo()
+        self.work["hidden_toolbox"] = {
+            "toolbox": [],
+            "blocks": []
+        }
+        self.work["work_source_label"] = 0
+        self.work["sample_id"] = ""
+        self.work["project_name"] = self.workInfo["name"]
+        self.work["toolbox_order"] = self.work["last_toolbox_order"] = [
+            "event", "control", "action", "appearance", "audio", "pen", "sensing",
+            "operator", "data", "data", "procedure", "mobile_control", "physic",
+            "physics2", "cloud_variable", "cloud_list", "advanced", "ai_lab",
+            "ai_game", "cognitive", "camera", "video", "wood", "arduino", "weeemake",
+            "microbit", "ai", "midimusic"
+        ]
+
+    # 可扩展的钩子方法
+    def onStart(self): pass
+    def onCreateActor(self, actor): pass
+    def onPrepareActors(self): pass
+    def onStartActors(self): pass
+    def onWriteWorkInfo(self): pass
+    def onClean(self): pass
+    def onFinish(self): pass
 
 if __name__ == "__main__":
     test_text = """
