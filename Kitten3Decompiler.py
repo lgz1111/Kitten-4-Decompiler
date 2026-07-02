@@ -46,6 +46,13 @@ class BlockDecompiler:
             next_element.append(BlockDecompiler(self.next_block).toxml())
 
         return block
+class KittenWorkDecompiler():
+    def __init__(self, workInfo, compiledWork) -> None:
+        self.workInfo = workInfo
+        self.work = compiledWork
+        self.functions = {}
+        
+        
 
 if __name__ == "__main__":
     test_text = """
