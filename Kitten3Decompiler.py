@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import json
 from BlockShadowCreator import SHADOW_ALL_TYPES
+
 class BlockDecompiler:
     def __init__(self, compiled_block):
         self.compiled_block = compiled_block
@@ -26,7 +27,6 @@ class BlockDecompiler:
         else:
             lable = "block"
         block = ET.Element(lable, {"type": self.type, "id": self.id})
-        
         # 处理 params 中的字段
         for key, value in self.params.items():
             if isinstance(value, str):  # 如果是字符串，生成 field
