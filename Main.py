@@ -18,6 +18,10 @@ def main():
     log(INFO, f"成功获取作品 \033[4;32m{workInfo['name']}\033[0m 的信息。")
     log(INFO, f"该作品由 \033[4;94m{workInfo['type']}\033[0m {workInfo['version']} 版本制作")
 
+    if workInfo["type"] == "KITTEN3" or workInfo["type"] == "KITTEN2":
+        if not UI.askYesNot("暂不支持该类型的作品，仍要继续吗"):
+            return
+
     compiledWorkURL = getCompiledWorkURL(workInfo)
     log(INFO, f"成功获取作品 \033[4;32m{workInfo['name']}\033[0m 的编译文件 URL。")
 

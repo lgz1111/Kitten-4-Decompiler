@@ -1,5 +1,9 @@
-import tkinter
-from tkinter import filedialog
+try:
+    import tkinter
+    from tkinter import filedialog
+    TKINTER_AVAILABLE = True
+except ImportError:
+    TKINTER_AVAILABLE = False
 from Log import VERBOSE, DEBUG, INFO, WARNING, ERROR
 import Log
 
@@ -29,7 +33,7 @@ class CommandLineUserInterface:
         if default is not None and value == "":
             return default
         return value
-                
+
     def askYesNot(self, message="确定？", default=None):
         message += "(y/n)"
         if default == True:
@@ -50,7 +54,7 @@ class CommandLineUserInterface:
                 return value - 1
             else:
                 print("输入有误，请重新输入！")
-    
+
     def operate(self, operations, default=None):
         length = len(operations)
         operations.append({
@@ -68,6 +72,8 @@ class CommandLineUserInterface:
                 operations[choice]["function"]()
 
     def askFilePath(self, message="请选择一个文件", fileTypes=(), default=None):
+        if  not(TKINTER_AVAILABLE):
+            return self.askFilePath_cli(memessage=message, )
         root = tkinter.Tk()
         root.title(message)
         path = filedialog.askopenfilename(filetypes=fileTypes, title=message)
@@ -76,7 +82,14 @@ class CommandLineUserInterface:
             return default
         return path
 
+    def askFilePath_cli(self, message="请选择一个文件", fileTypes=(), default=None):
+        path = input(message)
+        return path
+
     def askDirectory(self, message="请选择一个文件夹", default=None):
+        if  not(TKINTER_AVAILABLE):
+            return self.askDirectory_cli(memessage=message, )
+        
         root = tkinter.Tk()
         root.title(message)
         path = filedialog.askdirectory(title=message)
@@ -85,11 +98,23 @@ class CommandLineUserInterface:
             return default
         return path
 
-    def askSaveFilePath(self, message="请选择文件保存位置", defaultType=None, fileTypes=(), default=None, initialfile = filename):
+    def askDirectory_cli(self, message="请选择一个文件夹", default=None):
+        path = input(message)
+        return path
+
+    def askSaveFilePath(self, message="请选择文件保存位置", defaultType=None, fileTypes=(), default=None, initialfile=""):
+        if  not(TKINTER_AVAILABLE):
+            return self.askSaveFilePath_cli(memessage=message, default=default)
+        
         root = tkinter.Tk()
         root.title(message)
         path = filedialog.asksaveasfilename(defaultextension=defaultType, filetypes=fileTypes, title=message, initialfile =initialfile)
         root.destroy()
+        if default is not None and path == "":
+            return default
+        return path
+    def askSaveFilePath_cli(self, message="请选择文件保存位置", defaultType=None, fileTypes=(), default=None, initialfile=""):
+        path = input(message)
         if default is not None and path == "":
             return default
         return path
