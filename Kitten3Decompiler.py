@@ -3,15 +3,15 @@ import json
 from BlockShadowCreator import SHADOW_ALL_TYPES
 
 class BlockDecompiler:
-    def __init__(self, compiled_block):
+    def __init__(self, compiled_block:dict):
         self.compiled_block = compiled_block
         self.type = compiled_block.get("type", "unknown_type")
         self.id = compiled_block.get("id", "unknown_id")
         self.params = compiled_block.get("params", {})
         self.child_block = compiled_block.get("child_block")
-        self.next_block = compiled_block.get("next_block")
+        self.next_block = compiled_block.get("next_block",{})
 
-    def create_field(self, name, value):
+    def create_field(self, name, value) -> ET.Element:
         """生成 field 元素"""
         field = ET.Element("field", {"name": name})
         field.text = str(value)
@@ -34,6 +34,16 @@ class BlockDecompiler:
             elif isinstance(value, dict):  # 如果是嵌套 block，递归处理
                 value_element = ET.SubElement(block, "value", {"name": key})
                 value_element.append(BlockDecompiler(value).toxml())
+                value_element.append(BlockDecompiler(
+                    {
+                        "params": {
+                            "NUM": "0"
+                        },
+                        "kind": "domain_block",
+                        "type": "math_number",
+                        "id": "",
+                        "child_block": [],
+                    }).toxml())
 
         # 处理子块
         if self.child_block:
@@ -46,12 +56,77 @@ class BlockDecompiler:
             next_element.append(BlockDecompiler(self.next_block).toxml())
 
         return block
+    
+    def __str__(self):
+        return ET.tostring(self.toxml(), encoding="unicode")
+
+
+class FunctionBlockDecompiler(BlockDecompiler):
+
+    def __init__(self, compiled_block:dict):
+        super().__init__(compiled_block)
+        self.functionname = compiled_block.get("procedure_name")
+
+    def toxml(self):
+        """将块转换为 XML"""
+        lable = "block"
+        block = ET.Element(lable, {"type": self.type, "id": self.id})
+        # 添加函数名称字段
+        name_field = ET.SubElement(block, "field", {"name": "NAME"})
+        name_field.text = self.functionname
+        # 处理 params 中的字段
+        mutation_element = ET.SubElement(block, "mutation")
+        PARAMS_id = 0 
+        for key, value in self.params.items():
+            # mutation_element.append()
+            arg = ET.SubElement(mutation_element,"arg", {"name":key})
+            arg.text = ""
+            value_element = ET.SubElement(block, "value", {"name": PARAMS_id})
+            value_element.append(BlockDecompiler(
+                {
+                        "params": {
+                            "NUM": key
+                        },
+                        "kind": "domain_block",
+                        "type": "procedures_2_stable_parameter",
+                        "id": "",
+                        "child_block": [],
+                    }
+            ).toxml())
+            value_element.append(BlockDecompiler(
+                    {
+                        "params": {
+                            "NUM": "0"
+                        },
+                        "kind": "domain_block",
+                        "type": "math_number",
+                        "id": "",
+                        "child_block": [],
+                    }).toxml())
+
+            PARAMS_id += 1
+            # if isinstance(value, str):  # 如果是字符串，生成 field
+            #     block.append(self.create_field(key, value))
+            # elif isinstance(value, dict):  # 如果是嵌套 block，递归处理
+            #     value_element = ET.SubElement(block, "value", {"name": key})
+            #     value_element.append(BlockDecompiler(value).toxml())
+            pass
+        # 处理子块
+        if self.child_block:
+            statement = ET.SubElement(block, "statement", {"name": "DO"})
+            statement.append(BlockDecompiler(self.child_block).toxml())
+        # 处理下一个块
+        if self.next_block:
+            next_element = ET.SubElement(block, "next")
+            next_element.append(BlockDecompiler(self.next_block).toxml())
+        return block
+
 
 class ActorDecompiler:
 
-    def __init__(self, work, actor, compiledBlocks) -> None:
+    def __init__(self, work, actor:dict, compiledBlocks:dict) -> None:
         self.work = work
-        self.actor = actor
+        self.actor: dict = actor
         self.compiled = compiledBlocks
         self.blocks = {}
         self.connections = {}
@@ -68,8 +143,8 @@ class ActorDecompiler:
         }
 
         # 将角色中的函数添加到作品的函数集合中
-        for name, compiledFunction in self.compiled["procedures"].items():
-            self.work.functions[name] = compiledFunction
+        # for name, compiledFunction in self.compiled["procedures"].items():
+        #     self.work.functions[name] = compiledFunction
 
     def start(self):
         # 开始反编译角色
@@ -103,10 +178,10 @@ class ActorDecompiler:
 
 class KittenWorkDecompiler:
 
-    def __init__(self, workInfo, compiledWork) -> None:
-        self.workInfo = workInfo
-        self.work = compiledWork
-        self.functions = {}
+    def __init__(self, workInfo:dict, compiledWork:dict) -> None:
+        self.workInfo:dict = workInfo
+        self.work:dict = compiledWork
+        # self.functions = {}
 
     def start(self):
         # 开始反编译流程
@@ -139,9 +214,9 @@ class KittenWorkDecompiler:
         self.onFinish()
         return self.work
 
-    def getActor(self, actorID):
+    def getActor(self, actorID:str) -> dict:
         # 获取角色或场景信息
-        theatre = self.work["theatre"]
+        theatre: dict = self.work["theatre"]
         try:
             return theatre["actors"][actorID]
         except KeyError:
@@ -180,7 +255,7 @@ class KittenWorkDecompiler:
     def onClean(self): pass
     def onFinish(self): pass
 
-if __name__ == "__main__":
+if False:
     test_text = """
 {
     "params": {
@@ -246,7 +321,16 @@ if __name__ == "__main__":
     "times_left": 0
 }
 """
-    
+
     compiled_block = json.loads(test_text)
     decompiler = BlockDecompiler(compiled_block)
     print(ET.tostring(decompiler.toxml(), encoding="unicode"))
+
+if __name__ == "__main__":
+    # 测试反编译器
+    with open("D:\\laiguanzhou\\codemao\\编程猫作品备份\\test2-网页.bcmc", "r", encoding="utf-8") as f:
+        compiled_work = json.load(f)
+    decompiler = KittenWorkDecompiler({"name": "测试作品"}, compiled_work)
+    decompiled_work = decompiler.start()
+    with open("decompiled_work.json", "w", encoding="utf-8") as f:
+        json.dump(decompiled_work, f, ensure_ascii=False, indent=4)
