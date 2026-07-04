@@ -48,7 +48,7 @@ class BlockDecompiler:
         # 处理子块
         if self.child_block:
             statement = ET.SubElement(block, "statement", {"name": "DO"})
-            statement.append(BlockDecompiler(self.child_block).toxml())
+            statement.append(BlockDecompiler(self.child_block[0]).toxml())
 
         # 处理下一个块
         if self.next_block:
@@ -63,62 +63,64 @@ class BlockDecompiler:
 
 class FunctionBlockDecompiler(BlockDecompiler):
 
-    def __init__(self, compiled_block:dict):
+    def __init__(self, compiled_block: dict):
         super().__init__(compiled_block)
         self.functionname = compiled_block.get("procedure_name")
 
     def toxml(self):
         """将块转换为 XML"""
-        lable = "block"
-        block = ET.Element(lable, {"type": self.type, "id": self.id})
+        label = "block"
+        block = ET.Element(label, {"type": self.type, "id": self.id})
+        
         # 添加函数名称字段
         name_field = ET.SubElement(block, "field", {"name": "NAME"})
         name_field.text = self.functionname
+        
         # 处理 params 中的字段
         mutation_element = ET.SubElement(block, "mutation")
-        PARAMS_id = 0 
+        PARAMS_id = 0
         for key, value in self.params.items():
-            # mutation_element.append()
-            arg = ET.SubElement(mutation_element,"arg", {"name":key})
+            # 添加到 mutation 的 arg
+            arg = ET.SubElement(mutation_element, "arg", {"name": key})
             arg.text = ""
-            value_element = ET.SubElement(block, "value", {"name": PARAMS_id})
-            value_element.append(BlockDecompiler(
-                {
-                        "params": {
-                            "NUM": key
-                        },
-                        "kind": "domain_block",
-                        "type": "procedures_2_stable_parameter",
-                        "id": "",
-                        "child_block": [],
-                    }
-            ).toxml())
-            value_element.append(BlockDecompiler(
-                    {
-                        "params": {
-                            "NUM": "0"
-                        },
-                        "kind": "domain_block",
-                        "type": "math_number",
-                        "id": "",
-                        "child_block": [],
-                    }).toxml())
-
+            
+            # 添加 value 标签
+            value_element = ET.SubElement(block, "value", {"name": f"PARAMS{PARAMS_id}"})
+            
+            # 添加 shadow 块
+            shadow_block = ET.SubElement(value_element, "shadow", {
+                "type": "math_number",
+                "id": "",
+                "visible": "visible"
+            })
+            shadow_field = ET.SubElement(shadow_block, "field", {
+                "constraints": "-Infinity,Infinity,0,",
+                "name": "NUM"
+            })
+            shadow_field.text = ""
+            
+            # 添加参数块
+            param_block = ET.SubElement(value_element, "block", {
+                "type": "procedures_2_stable_parameter",
+                "id": "",
+                "inline": value,
+                "visible": "visible"
+            })
+            param_field = ET.SubElement(param_block, "field", {"name": "param_name"})
+            param_field.text = key
+            
             PARAMS_id += 1
-            # if isinstance(value, str):  # 如果是字符串，生成 field
-            #     block.append(self.create_field(key, value))
-            # elif isinstance(value, dict):  # 如果是嵌套 block，递归处理
-            #     value_element = ET.SubElement(block, "value", {"name": key})
-            #     value_element.append(BlockDecompiler(value).toxml())
-            pass
+        
         # 处理子块
         if self.child_block:
             statement = ET.SubElement(block, "statement", {"name": "DO"})
-            statement.append(BlockDecompiler(self.child_block).toxml())
+            statement.append(BlockDecompiler(self.child_block[0]).toxml())
+        
         # 处理下一个块
         if self.next_block:
             next_element = ET.SubElement(block, "next")
             next_element.append(BlockDecompiler(self.next_block).toxml())
+        
         return block
 
 
