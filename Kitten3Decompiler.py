@@ -52,7 +52,7 @@ class BlockDecompiler:
         if isinstance(self.child_block, list) and self.child_block:
             if len(self.child_block) == 1:
                 statement = ET.SubElement(block, "statement", {"name": "DO"})
-                statement.append(getBlockDecompiler(child).toxml())
+                statement.append(getBlockDecompiler(self.child_block[0]).toxml())
             else:
                 statement_id = 0
                 for child in self.child_block:
@@ -73,10 +73,13 @@ class ControlsIfDecompiler(BlockDecompiler):
     def children(self, block):
         statement_id = 0
         for child in self.child_block:
-            statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+            if statement_id == len(self.child_block):
+                statement_name = "ELSE"
+            else:
+                statement_name =  f"DO{statement_id}"
+            statement = ET.SubElement(block, "statement", {"name":statement_name})
             statement.append(getBlockDecompiler(child).toxml())
             statement_id += 1
-        pass
 
     def conditions (self,block):
         condition_id = 0
@@ -85,7 +88,6 @@ class ControlsIfDecompiler(BlockDecompiler):
             condition.append(getBlockDecompiler(child).toxml())
             condition.append(ET.fromstring("<empty type= \"logic_empty\" editable= \"false\"><field name= \"BOOL\"></field></empty>"))
             condition_id += 1
-        pass
 
     def toxml(self):
         block = super().toxml()
