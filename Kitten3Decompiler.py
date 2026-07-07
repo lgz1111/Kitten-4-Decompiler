@@ -288,7 +288,7 @@ if False:
 
 if __name__ == "__main__":
     # 测试反编译器
-    compiled_work = json.loads("""{
+    test_txt = """{
     "version": 16,
     "application_version": "3.8.17",
     "work_type": "KITTEN",
@@ -650,7 +650,9 @@ if __name__ == "__main__":
         }
     ],
     "ai_lab": {}
-}""")
+}"""
+
+    compiled_work = json.loads(test_txt)
     decompiler = KittenWorkDecompiler({"name": "测试作品"}, compiled_work)
     decompiled_work = decompiler.start()
     with open("decompiled_work.json", "w", encoding="utf-8") as f:
