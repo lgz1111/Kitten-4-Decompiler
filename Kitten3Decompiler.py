@@ -215,7 +215,7 @@ class KittenWorkDecompiler:
     def onClean(self): pass
     def onFinish(self): pass
 
-if False:
+def block_test(BlockDecompiler):
     test_text = """
 {
     "params": {
@@ -286,8 +286,10 @@ if False:
     decompiler = BlockDecompiler(compiled_block)
     print(ET.tostring(decompiler.toxml(), encoding="unicode"))
 
-if __name__ == "__main__":
-    # 测试反编译器
+if False:
+    block_test(BlockDecompiler)
+
+def work_test(KittenWorkDecompiler):
     test_txt = """{
     "version": 16,
     "application_version": "3.8.17",
@@ -657,3 +659,7 @@ if __name__ == "__main__":
     decompiled_work = decompiler.start()
     with open("decompiled_work.json", "w", encoding="utf-8") as f:
         json.dump(decompiled_work, f, ensure_ascii=False, indent=4)
+
+if __name__ == "__main__":
+    # 测试反编译器
+    work_test(KittenWorkDecompiler)
