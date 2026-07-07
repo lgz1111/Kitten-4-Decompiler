@@ -215,7 +215,7 @@ class KittenWorkDecompiler:
     def onClean(self): pass
     def onFinish(self): pass
 
-def block_test(BlockDecompiler):
+def block_test():
     test_text = """
 {
     "params": {
@@ -287,9 +287,9 @@ def block_test(BlockDecompiler):
     print(ET.tostring(decompiler.toxml(), encoding="unicode"))
 
 if False:
-    block_test(BlockDecompiler)
+    block_test()
 
-def work_test(KittenWorkDecompiler):
+def work_test():
     test_txt = """{
     "version": 16,
     "application_version": "3.8.17",
@@ -662,4 +662,4 @@ def work_test(KittenWorkDecompiler):
 
 if __name__ == "__main__":
     # 测试反编译器
-    work_test(KittenWorkDecompiler)
+    work_test()
