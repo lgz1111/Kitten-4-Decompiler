@@ -3,13 +3,13 @@ import json
 from BlockShadowCreator import SHADOW_ALL_TYPES
 
 class BlockDecompiler:
-    def __init__(self, compiled_block:dict):
+    def __init__(self, compiled_block: dict):
         self.compiled_block = compiled_block
         self.type = compiled_block.get("type", "unknown_type")
         self.id = compiled_block.get("id", "unknown_id")
         self.params = compiled_block.get("params", {})
-        self.child_block = compiled_block.get("child_block")
-        self.next_block = compiled_block.get("next_block",{})
+        self.child_block = compiled_block.get("child_block", [])
+        self.next_block = compiled_block.get("next_block", {})
 
     def create_field(self, name, value) -> ET.Element:
         """生成 field 元素"""
@@ -46,9 +46,10 @@ class BlockDecompiler:
                     }).toxml())
 
         # 处理子块
-        if self.child_block:
+        if isinstance(self.child_block, list) and self.child_block:
             statement = ET.SubElement(block, "statement", {"name": "DO"})
-            statement.append(BlockDecompiler(self.child_block[0]).toxml())
+            for child in self.child_block:
+                statement.append(BlockDecompiler(child).toxml())
 
         # 处理下一个块
         if self.next_block:
