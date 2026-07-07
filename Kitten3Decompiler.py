@@ -24,25 +24,34 @@ class BlockDecompiler:
         block = ET.Element(label, {"type": self.type, "id": self.id})
 
         # 处理 params
+        self.parms(block)
+
+        # 处理子块
+        self.children(block)
+
+        # 处理下一个块
+        self.nexts(block)
+
+        return block
+
+    def nexts(self, block):
+        if self.next_block:
+            next_element = ET.SubElement(block, "next")
+            next_element.append(getBlockDecompiler(self.next_block).toxml())
+
+    def children(self, block):
+        if isinstance(self.child_block, list) and self.child_block:
+            statement = ET.SubElement(block, "statement", {"name": "DO"})
+            for child in self.child_block:
+                statement.append(getBlockDecompiler(child).toxml())
+
+    def parms(self, block):
         for key, value in self.params.items():
             if isinstance(value, str):
                 block.append(self.create_field(key, value))
             elif isinstance(value, dict):
                 value_element = ET.SubElement(block, "value", {"name": key})
                 value_element.append(getBlockDecompiler(value).toxml())
-
-        # 处理子块
-        if isinstance(self.child_block, list) and self.child_block:
-            statement = ET.SubElement(block, "statement", {"name": "DO"})
-            for child in self.child_block:
-                statement.append(getBlockDecompiler(child).toxml())
-
-        # 处理下一个块
-        if self.next_block:
-            next_element = ET.SubElement(block, "next")
-            next_element.append(getBlockDecompiler(self.next_block).toxml())
-
-        return block
 
 # 特殊积木反编译器：ControlsIfDecompiler
 class ControlsIfDecompiler(BlockDecompiler):
