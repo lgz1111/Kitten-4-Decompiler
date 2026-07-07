@@ -65,10 +65,10 @@ class ControlsIfDecompiler(BlockDecompiler):
     def children(self, block):
         statement_id = 0
         for child in self.child_block:
-            statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+            statement = ET.SubElement(block, "statement", {"name": f"IF{statement_id}"})
             statement.append(getBlockDecompiler(child).toxml())
             statement_id += 1
-        pass
+        passIF
     def toxml(self):
         block = super().toxml()
         mutation = ET.SubElement(block, "mutation", {
