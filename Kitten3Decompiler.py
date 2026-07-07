@@ -10,6 +10,7 @@ class BlockDecompiler:
         self.id = compiled_block.get("id", "unknown_id")
         self.params = compiled_block.get("params", {})
         self.child_block = compiled_block.get("child_block", [])
+        self.conditions = compiled_block.get("conditions", [])
         self.next_block = compiled_block.get("next_block", {})
 
     def create_field(self, name, value) -> ET.Element:
@@ -41,9 +42,15 @@ class BlockDecompiler:
 
     def children(self, block):
         if isinstance(self.child_block, list) and self.child_block:
-            statement = ET.SubElement(block, "statement", {"name": "DO"})
-            for child in self.child_block:
+            if len(self.child_block) == 1:
+                statement = ET.SubElement(block, "statement", {"name": "DO"})
                 statement.append(getBlockDecompiler(child).toxml())
+            else:
+                statement_id = 0
+                for child in self.child_block:
+                    statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+                    statement.append(getBlockDecompiler(child).toxml())
+                    statement_id += 1
 
     def parms(self, block):
         for key, value in self.params.items():
@@ -55,6 +62,13 @@ class BlockDecompiler:
 
 # 特殊积木反编译器：ControlsIfDecompiler
 class ControlsIfDecompiler(BlockDecompiler):
+    def children(self, block):
+        statement_id = 0
+        for child in self.child_block:
+            statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+            statement.append(getBlockDecompiler(child).toxml())
+            statement_id += 1
+        pass
     def toxml(self):
         block = super().toxml()
         mutation = ET.SubElement(block, "mutation", {
