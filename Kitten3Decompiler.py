@@ -21,7 +21,7 @@ class BlockDecompiler:
 
     def toxml(self):
         """将块转换为 XML"""
-        label = "shadow" if self.type in SHADOW_ALL_TYPES else "block"
+        label = self.get_block_label()
         block = ET.Element(label, {"type": self.type, "id": self.id})
 
         # 处理 params
@@ -34,6 +34,14 @@ class BlockDecompiler:
         self.nexts(block)
 
         return block
+
+    def get_block_label(self):
+        if self.type == "logic_empty":
+            return "empty"
+        elif self.type in SHADOW_ALL_TYPES:
+            return "shadow"
+        else:
+            return "block"
 
     def nexts(self, block):
         if self.next_block:
@@ -69,8 +77,19 @@ class ControlsIfDecompiler(BlockDecompiler):
             statement.append(getBlockDecompiler(child).toxml())
             statement_id += 1
         pass
+
+    def conditions (self,block):
+        condition_id = 0
+        for child in self.child_block:
+            condition = ET.SubElement(block, "value", {"name": f"IF{condition_id}"})
+            condition.append(getBlockDecompiler(child).toxml())
+            condition.append(ET.fromstring("<empty type= \"logic_empty\" editable= \"false\"><field name= \"BOOL\"></field></empty>"))
+            condition_id += 1
+        pass
+
     def toxml(self):
         block = super().toxml()
+        self.conditions()
         mutation = ET.SubElement(block, "mutation", {
             "elseif": str(len(self.compiled_block.get("conditions", [])) - 1),
             "else": "1"
