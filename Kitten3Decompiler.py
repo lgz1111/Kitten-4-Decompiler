@@ -68,7 +68,7 @@ class ControlsIfDecompiler(BlockDecompiler):
             statement = ET.SubElement(block, "statement", {"name": f"IF{statement_id}"})
             statement.append(getBlockDecompiler(child).toxml())
             statement_id += 1
-        passIF
+        pass
     def toxml(self):
         block = super().toxml()
         mutation = ET.SubElement(block, "mutation", {
