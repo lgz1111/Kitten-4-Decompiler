@@ -68,6 +68,10 @@ class BlockDecompiler:
                 value_element = ET.SubElement(block, "value", {"name": key})
                 value_element.append(getBlockDecompiler(value).toxml())
 
+    def __str__(self):
+        return ET.tostring(self.toxml(), encoding="unicode")
+
+
 # 特殊积木反编译器：ControlsIfDecompiler
 class ControlsIfDecompiler(BlockDecompiler):
     def children(self, block):
@@ -81,9 +85,9 @@ class ControlsIfDecompiler(BlockDecompiler):
             statement.append(getBlockDecompiler(child).toxml())
             statement_id += 1
 
-    def conditions (self,block):
+    def decompile_conditions (self,block):
         condition_id = 0
-        for child in self.child_block:
+        for child in self.conditions:
             condition = ET.SubElement(block, "value", {"name": f"IF{condition_id}"})
             condition.append(getBlockDecompiler(child).toxml())
             condition.append(ET.fromstring("<empty type= \"logic_empty\" editable= \"false\"><field name= \"BOOL\"></field></empty>"))
@@ -91,12 +95,31 @@ class ControlsIfDecompiler(BlockDecompiler):
 
     def toxml(self):
         block = super().toxml()
-        self.conditions()
-        mutation = ET.SubElement(block, "mutation", {
-            "elseif": str(len(self.compiled_block.get("conditions", [])) - 1),
+        self.decompile_conditions(block)
+        self.mutation = ET.SubElement(block, "mutation", {
+            "elseif": str(len(self.conditions) - 1),
             "else": "1"
         })
         return block
+
+
+class ControlsIfNoElseDecompiler(ControlsIfDecompiler):
+    def children(self, block):
+        statement_id = 0
+        for child in self.child_block:
+            if child != None:
+                statement_name =  f"DO{statement_id}"
+                statement = ET.SubElement(block, "statement", {"name":statement_name})
+                statement.append(getBlockDecompiler(child).toxml())
+                statement_id += 1
+            else:
+                pass
+
+    def toxml(self):
+        block = super().toxml()
+        block.remove(self.mutation)
+        return block
+
 
 # 特殊积木反编译器：TextJoinDecompiler
 class TextJoinDecompiler(BlockDecompiler):
@@ -120,6 +143,7 @@ class Procedures2CallDecompiler(BlockDecompiler):
 # 特殊积木映射表
 SPECIAL_DECOMPILER_MAP = {
     "controls_if": ControlsIfDecompiler,
+    "controls_if_no_else": ControlsIfNoElseDecompiler,
     "text_join": TextJoinDecompiler,
     "procedures_2_callnoreturn": Procedures2CallDecompiler,
     "procedures_2_callreturn": Procedures2CallDecompiler
