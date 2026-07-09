@@ -256,7 +256,7 @@ class ActorDecompiler:
     def onStart(self): pass
     def onStartFunction(self, name): pass
 
-class KittenWorkDecompiler:
+class Kitten3WorkDecompiler:
 
     def __init__(self, workInfo:dict, compiledWork:dict) -> None:
         self.workInfo:dict = workInfo
@@ -795,7 +795,7 @@ def work_test():
 }"""
 
     compiled_work = json.loads(test_txt)
-    decompiler = KittenWorkDecompiler({"name": "测试作品"}, compiled_work)
+    decompiler = Kitten3WorkDecompiler({"name": "测试作品"}, compiled_work)
     decompiled_work = decompiler.start()
     with open("decompiled_work.json", "w", encoding="utf-8") as f:
         json.dump(decompiled_work, f, ensure_ascii=False, indent=4)
