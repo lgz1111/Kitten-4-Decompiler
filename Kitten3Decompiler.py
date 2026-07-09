@@ -156,12 +156,32 @@ class Procedures2DefCallDecompiler(BlockDecompiler):
         statement = ET.SubElement(block, "statement", {"name": "STACK"})
         statement.append(getBlockDecompiler(self.child_block[0]).toxml())
 
+
+class Procedures2CallDecompiler(BlockDecompiler):
+    """没有返回值函数的调用积木的反编译器"""
+    def __init__(self, compiled_block):
+        super().__init__(compiled_block)
+        self.procedure_name = compiled_block.get("procedure_name","")
+    def parms(self, block):
+        mutation = ET.SubElement(block, "mutation", {"name": self.procedure_name})
+        arg_id = 0
+        for key, value in self.params.items():
+            if isinstance(value, str):
+                block.append(self.create_field(key, value))
+            elif isinstance(value, dict):
+                value_element = ET.SubElement(block, "value", {"name": f"ARG{arg_id}"})
+                value_element.append(getBlockDecompiler(value).toxml())
+            mutation.append(ET.Element("procedures_2_parameter_shadow", {"name": key}))
+            arg_id += 1
+
+    
 # 特殊积木映射表
 SPECIAL_DECOMPILER_MAP = {
     "controls_if": ControlsIfDecompiler,
     "controls_if_no_else": ControlsIfNoElseDecompiler,
     "text_join": TextJoinDecompiler,
     "procedures_2_defnoreturn": Procedures2DefCallDecompiler,
+    "procedures_2_callnoreturn": Procedures2CallDecompiler
 }
 
 # 根据积木类型获取对应的反编译器
