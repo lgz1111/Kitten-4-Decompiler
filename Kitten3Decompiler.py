@@ -51,14 +51,16 @@ class BlockDecompiler:
     def children(self, block):
         if isinstance(self.child_block, list) and self.child_block:
             if len(self.child_block) == 1:
-                statement = ET.SubElement(block, "statement", {"name": "DO"})
-                statement.append(getBlockDecompiler(self.child_block[0]).toxml())
+                if self.child_block[0] :
+                    statement = ET.SubElement(block, "statement", {"name": "DO"})
+                    statement.append(getBlockDecompiler(self.child_block[0]).toxml())
             else:
                 statement_id = 0
                 for child in self.child_block:
-                    statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
-                    statement.append(getBlockDecompiler(child).toxml())
-                    statement_id += 1
+                    if child:
+                        statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+                        statement.append(getBlockDecompiler(child).toxml())
+                        statement_id += 1
 
     def parms(self, block):
         for key, value in self.params.items():
@@ -81,9 +83,10 @@ class ControlsIfDecompiler(BlockDecompiler):
                 statement_name = "ELSE"
             else:
                 statement_name =  f"DO{statement_id}"
-            statement = ET.SubElement(block, "statement", {"name":statement_name})
-            statement.append(getBlockDecompiler(child).toxml())
-            statement_id += 1
+            if child:
+                statement = ET.SubElement(block, "statement", {"name":statement_name})
+                statement.append(getBlockDecompiler(child).toxml())
+                statement_id += 1
 
     def decompile_conditions (self,block):
         condition_id = 0
@@ -176,6 +179,7 @@ class Procedures2CallNoReturnDecompiler(BlockDecompiler):
     def toxml(self):
         block =  super().toxml()
         block.append(self.create_field("NAME", self.procedure_name))
+        return block
 
 class Procedures2CallReturnDecompiler(Procedures2CallNoReturnDecompiler):
     """有返回值函数的调用积木的反编译器"""
@@ -209,7 +213,7 @@ class ActorDecompiler:
     def prepare(self):
         # 准备角色的积木数据
         self.onPrepare()
-        self.blocks["blocksXML"] = ""
+        # self.blocks["blocksXML"] = ""
 
         # # 将积木数据与角色关联
         # self.actor["block_data_json"] = {
@@ -233,7 +237,7 @@ class ActorDecompiler:
             self.blocks[name] = self.decompileFunction(compiledFunction)
             blocksXML += self.blocks[name]
 
-        self.blocks["blocksXML"] = blocksXML
+        self.actor["blocksXML"] = blocksXML
 
     def decompileFunction(self, compiledFunction:dict) -> str:
         # 反编译函数，返回字符串
@@ -314,11 +318,32 @@ class KittenWorkDecompiler:
         self.work["sample_id"] = ""
         self.work["project_name"] = self.workInfo["name"]
         self.work["toolbox_order"] = self.work["last_toolbox_order"] = [
-            "event", "control", "action", "appearance", "audio", "pen", "sensing",
-            "operator", "data", "data", "procedure", "mobile_control", "physic",
-            "physics2", "cloud_variable", "cloud_list", "advanced", "ai_lab",
-            "ai_game", "cognitive", "camera", "video", "wood", "arduino", "weeemake",
-            "microbit", "ai", "midimusic"
+            "hardware_ideali",
+            "hardware_ideali_asr",
+            "hardware_ideali_smartcar",
+            "hardware_grovezero",
+            "event",
+            "control",
+            "action",
+            "appearance",
+            "audio",
+            "pen",
+            "sensing",
+            "operator",
+            "data",
+            "procedure",
+            "physic",
+            "ai",
+            "cloud_variable",
+            "advanced",
+            "hardware_arduino",
+            "hardware_weeemake",
+            "hardware_microbit",
+            "camera",
+            "video",
+            "wood",
+            "cognitive",
+            "ai_lab"
         ]
 
     # 可扩展的钩子方法
