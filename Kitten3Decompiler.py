@@ -156,7 +156,7 @@ def getBlockDecompiler(compiled_block: dict) -> BlockDecompiler:
     return decompiler_class(compiled_block)
 
 class ActorDecompiler:
-
+    """对角色反编译"""
     def __init__(self, work, actor:dict, compiledBlocks:dict) -> None:
         self.work = work
         self.actor: dict = actor
@@ -167,34 +167,39 @@ class ActorDecompiler:
     def prepare(self):
         # 准备角色的积木数据
         self.onPrepare()
+        self.blocks["blocksXML"] = ""
 
-        # 将积木数据与角色关联
-        self.actor["block_data_json"] = {
-            "blocks": self.blocks,
-            "connections": self.connections,
-            "comments": {}
-        }
+        # # 将积木数据与角色关联
+        # self.actor["block_data_json"] = {
+        #     "blocks": self.blocks,
+        #     "connections": self.connections,
+        #     "comments": {}
+        # }
 
     def start(self):
         # 开始反编译角色
         self.onStart()
+        blocksXML = "<variables></variables>"
+        # 反编译角色的其余积木
+        for id, compiledBlock in self.compiled["compiled_block_map"].items():
+            self.blocks[id] = self.decompileBlock(compiledBlock)
+            blocksXML += self.blocks[id]
 
         # 反编译角色的所有函数
         for name, compiledFunction in self.compiled["procedures"].items():
             self.onStartFunction(name)
             self.blocks[name] = self.decompileFunction(compiledFunction)
+            blocksXML += self.blocks[name]
 
-        # 反编译角色的其余积木
-        for id, compiledBlock in self.compiled["compiled_block_map"].items():
-            self.blocks[id] = self.decompileBlock(compiledBlock)
+        self.blocks["blocksXML"] = blocksXML
 
-    def decompileFunction(self, compiledFunction):
+    def decompileFunction(self, compiledFunction:dict) -> str:
         # 反编译函数，返回字符串
         self.onPrepareFunction(compiledFunction["id"])
         decompiler = getBlockDecompiler(compiledFunction)
         return ET.tostring(decompiler.toxml(), encoding="unicode")
 
-    def decompileBlock(self, compiledBlock):
+    def decompileBlock(self, compiledBlock:dict) -> str:
         # 反编译单个积木，返回字符串
         decompiler = getBlockDecompiler(compiledBlock)
         return ET.tostring(decompiler.toxml(), encoding="unicode")
