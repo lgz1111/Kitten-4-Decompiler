@@ -130,23 +130,38 @@ class TextJoinDecompiler(BlockDecompiler):
         })
         return block
 
-# 特殊积木反编译器：Procedures2CallDecompiler
-class Procedures2CallDecompiler(BlockDecompiler):
-    def toxml(self):
-        block = super().toxml()
-        mutation = ET.SubElement(block, "mutation", {
-            "name": self.compiled_block.get("procedure_name", ""),
-            "def_id": self.compiled_block.get("id", "")
-        })
-        return block
+class Procedures2DefCallDecompiler(BlockDecompiler):
+    """定义函数的积木的反编译"""
+    def parms(self, block):
+        # return super().parms(block)
+        mutation = ET.SubElement(block, "mutation")
+        parm_id = 0
+        for key, value in self.params.items():
+            arg_element = ET.SubElement(mutation, "arg", {"name": key})
+            value_element = ET.SubElement(block, "value", {"name": f"PARAMS{parm_id}"})
+            value_element.append(
+                ET.fromstring(
+                    "<shadow type= \"math_number\"><field constraints= \"-Infinity,Infinity,0,\" name= \"NUM\"></field></shadow>"
+                    )
+                )
+            value_element.append(
+                ET.fromstring(
+                    f"<shadow type= \"procedures_2_stable_parameter\" inline= \"{value}\"><field name= \"param_name\">{key}</field></shadow>"
+                    )
+                )
+            parm_id +=1
+        pass
+
+    def children(self, block):
+        statement = ET.SubElement(block, "statement", {"name": "STACK"})
+        statement.append(getBlockDecompiler(self.child_block[0]).toxml())
 
 # 特殊积木映射表
 SPECIAL_DECOMPILER_MAP = {
     "controls_if": ControlsIfDecompiler,
     "controls_if_no_else": ControlsIfNoElseDecompiler,
     "text_join": TextJoinDecompiler,
-    "procedures_2_callnoreturn": Procedures2CallDecompiler,
-    "procedures_2_callreturn": Procedures2CallDecompiler
+    "procedures_2_defnoreturn": Procedures2DefCallDecompiler,
 }
 
 # 根据积木类型获取对应的反编译器
