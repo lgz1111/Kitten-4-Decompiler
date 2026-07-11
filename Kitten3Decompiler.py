@@ -22,7 +22,7 @@ class BlockDecompiler:
     def toxml(self):
         """将块转换为 XML"""
         label = self.get_block_label()
-        block = ET.Element(label, {"type": self.type, "id": self.id})
+        block = ET.Element(label, {"type": self.type, "id": self.id,"visible":"visible"})
 
         # 处理 params
         self.parms(block)
