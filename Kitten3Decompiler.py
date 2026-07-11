@@ -2,6 +2,7 @@ from BlockShadowCreator import SHADOW_ALL_TYPES
 import xml.etree.ElementTree as ET
 import json
 
+
 # 基础反编译器类
 class BlockDecompiler:
     def __init__(self, compiled_block: dict):
@@ -22,7 +23,9 @@ class BlockDecompiler:
     def toxml(self):
         """将块转换为 XML"""
         label = self.get_block_label()
-        block = ET.Element(label, {"type": self.type, "id": self.id,"visible":"visible"})
+        block = ET.Element(
+            label, {"type": self.type, "id": self.id, "visible": "visible"}
+        )
 
         # 处理 params
         self.parms(block)
@@ -51,14 +54,16 @@ class BlockDecompiler:
     def children(self, block):
         if isinstance(self.child_block, list) and self.child_block:
             if len(self.child_block) == 1:
-                if self.child_block[0] :
+                if self.child_block[0]:
                     statement = ET.SubElement(block, "statement", {"name": "DO"})
                     statement.append(getBlockDecompiler(self.child_block[0]).toxml())
             else:
                 statement_id = 0
                 for child in self.child_block:
                     if child:
-                        statement = ET.SubElement(block, "statement", {"name": f"DO{statement_id}"})
+                        statement = ET.SubElement(
+                            block, "statement", {"name": f"DO{statement_id}"}
+                        )
                         statement.append(getBlockDecompiler(child).toxml())
                         statement_id += 1
 
@@ -82,27 +87,30 @@ class ControlsIfDecompiler(BlockDecompiler):
             if statement_id == len(self.child_block):
                 statement_name = "ELSE"
             else:
-                statement_name =  f"DO{statement_id}"
+                statement_name = f"DO{statement_id}"
             if child:
-                statement = ET.SubElement(block, "statement", {"name":statement_name})
+                statement = ET.SubElement(block, "statement", {"name": statement_name})
                 statement.append(getBlockDecompiler(child).toxml())
                 statement_id += 1
 
-    def decompile_conditions (self,block):
+    def decompile_conditions(self, block):
         condition_id = 0
         for child in self.conditions:
             condition = ET.SubElement(block, "value", {"name": f"IF{condition_id}"})
             condition.append(getBlockDecompiler(child).toxml())
-            condition.append(ET.fromstring("<empty type= \"logic_empty\" editable= \"false\"><field name= \"BOOL\"></field></empty>"))
+            condition.append(
+                ET.fromstring(
+                    '<empty type= "logic_empty" editable= "false"><field name= "BOOL"></field></empty>'
+                )
+            )
             condition_id += 1
 
     def toxml(self):
         block = super().toxml()
         self.decompile_conditions(block)
-        self.mutation = ET.SubElement(block, "mutation", {
-            "elseif": str(len(self.conditions) - 1),
-            "else": "1"
-        })
+        self.mutation = ET.SubElement(
+            block, "mutation", {"elseif": str(len(self.conditions) - 1), "else": "1"}
+        )
         return block
 
 
@@ -111,8 +119,8 @@ class ControlsIfNoElseDecompiler(ControlsIfDecompiler):
         statement_id = 0
         for child in self.child_block:
             if child != None:
-                statement_name =  f"DO{statement_id}"
-                statement = ET.SubElement(block, "statement", {"name":statement_name})
+                statement_name = f"DO{statement_id}"
+                statement = ET.SubElement(block, "statement", {"name": statement_name})
                 statement.append(getBlockDecompiler(child).toxml())
                 statement_id += 1
             else:
@@ -128,13 +136,17 @@ class ControlsIfNoElseDecompiler(ControlsIfDecompiler):
 class TextJoinDecompiler(BlockDecompiler):
     def toxml(self):
         block = super().toxml()
-        mutation = ET.SubElement(block, "mutation", {
-            "items": str(len(self.params))
-        })
+        mutation = ET.SubElement(block, "mutation", {"items": str(len(self.params))})
         return block
+
 
 class Procedures2DefDecompiler(BlockDecompiler):
     """定义函数的积木的反编译"""
+
+    def __init__(self, compiled_block):
+        super().__init__(compiled_block)
+        self.procedure_name = compiled_block.get("procedure_name", "")
+
     def parms(self, block):
         # return super().parms(block)
         mutation = ET.SubElement(block, "mutation")
@@ -145,27 +157,34 @@ class Procedures2DefDecompiler(BlockDecompiler):
             value_element = ET.SubElement(block, "value", {"name": f"PARAMS{parm_id}"})
             value_element.append(
                 ET.fromstring(
-                    "<shadow type= \"math_number\"><field constraints= \"-Infinity,Infinity,0,\" name= \"NUM\"></field></shadow>"
-                    )
+                    '<shadow type= "math_number"><field constraints= "-Infinity,Infinity,0," name= "NUM"></field></shadow>'
                 )
+            )
             value_element.append(
                 ET.fromstring(
-                    f"<block type= \"procedures_2_stable_parameter\" inline= \"{value}\"><field name= \"param_name\">{key}</field></block>"
-                    )
+                    f'<block type= "procedures_2_stable_parameter" inline= "{value}"><field name= "param_name">{key}</field></block>'
                 )
-            parm_id +=1
+            )
+            parm_id += 1
         pass
 
     def children(self, block):
         statement = ET.SubElement(block, "statement", {"name": "STACK"})
         statement.append(getBlockDecompiler(self.child_block[0]).toxml())
 
+    def toxml(self):
+        block = super().toxml()
+        block.append(self.create_field("NAME", self.procedure_name))
+        return block
+
 
 class Procedures2CallNoReturnDecompiler(BlockDecompiler):
     """没有返回值函数的调用积木的反编译器"""
+
     def __init__(self, compiled_block):
         super().__init__(compiled_block)
-        self.procedure_name = compiled_block.get("procedure_name","")
+        self.procedure_name = compiled_block.get("procedure_name", "")
+
     def parms(self, block):
         mutation = ET.SubElement(block, "mutation", {"name": self.procedure_name})
         arg_id = 0
@@ -175,19 +194,25 @@ class Procedures2CallNoReturnDecompiler(BlockDecompiler):
             elif isinstance(value, dict):
                 value_element = ET.SubElement(block, "value", {"name": f"ARG{arg_id}"})
                 value_element.append(getBlockDecompiler(value).toxml())
-            parameter_shadow_element = ET.Element("procedures_2_parameter_shadow", {"name": key})
+            parameter_shadow_element = ET.Element(
+                "procedures_2_parameter_shadow", {"name": key}
+            )
             parameter_shadow_element.text = ""
             mutation.append(parameter_shadow_element)
             arg_id += 1
+
     def toxml(self):
-        block =  super().toxml()
+        block = super().toxml()
         block.append(self.create_field("NAME", self.procedure_name))
         return block
 
+
 class Procedures2CallReturnDecompiler(Procedures2CallNoReturnDecompiler):
     """有返回值函数的调用积木的反编译器"""
+
     pass
-    
+
+
 # 特殊积木映射表
 SPECIAL_DECOMPILER_MAP = {
     "controls_if": ControlsIfDecompiler,
@@ -195,8 +220,9 @@ SPECIAL_DECOMPILER_MAP = {
     "text_join": TextJoinDecompiler,
     "procedures_2_defnoreturn": Procedures2DefDecompiler,
     "procedures_2_callnoreturn": Procedures2CallNoReturnDecompiler,
-    "procedures_2_callreturn": Procedures2CallReturnDecompiler
+    "procedures_2_callreturn": Procedures2CallReturnDecompiler,
 }
+
 
 # 根据积木类型获取对应的反编译器
 def getBlockDecompiler(compiled_block: dict) -> BlockDecompiler:
@@ -204,9 +230,11 @@ def getBlockDecompiler(compiled_block: dict) -> BlockDecompiler:
     decompiler_class = SPECIAL_DECOMPILER_MAP.get(block_type, BlockDecompiler)
     return decompiler_class(compiled_block)
 
+
 class ActorDecompiler:
     """对角色反编译"""
-    def __init__(self, work, actor:dict, compiledBlocks:dict) -> None:
+
+    def __init__(self, work, actor: dict, compiledBlocks: dict) -> None:
         self.work = work
         self.actor: dict = actor
         self.compiled = compiledBlocks
@@ -242,28 +270,36 @@ class ActorDecompiler:
 
         self.actor["blocksXML"] = blocksXML
 
-    def decompileFunction(self, compiledFunction:dict) -> str:
+    def decompileFunction(self, compiledFunction: dict) -> str:
         # 反编译函数，返回字符串
         self.onPrepareFunction(compiledFunction["id"])
         decompiler = getBlockDecompiler(compiledFunction)
         return ET.tostring(decompiler.toxml(), encoding="unicode")
 
-    def decompileBlock(self, compiledBlock:dict) -> str:
+    def decompileBlock(self, compiledBlock: dict) -> str:
         # 反编译单个积木，返回字符串
         decompiler = getBlockDecompiler(compiledBlock)
         return ET.tostring(decompiler.toxml(), encoding="unicode")
 
     # 钩子方法，提供扩展点
-    def onPrepare(self): pass
-    def onPrepareFunction(self, name): pass
-    def onStart(self): pass
-    def onStartFunction(self, name): pass
+    def onPrepare(self):
+        pass
+
+    def onPrepareFunction(self, name):
+        pass
+
+    def onStart(self):
+        pass
+
+    def onStartFunction(self, name):
+        pass
+
 
 class Kitten3WorkDecompiler:
 
-    def __init__(self, workInfo:dict, compiledWork:dict) -> None:
-        self.workInfo:dict = workInfo
-        self.work:dict = compiledWork
+    def __init__(self, workInfo: dict, compiledWork: dict) -> None:
+        self.workInfo: dict = workInfo
+        self.work: dict = compiledWork
 
     def start(self):
         # 开始反编译流程
@@ -272,7 +308,9 @@ class Kitten3WorkDecompiler:
         # 创建角色反编译器
         decompilers = []
         for actorCompiledBlocks in self.work["compile_result"]:
-            actor = ActorDecompiler(self, self.getActor(actorCompiledBlocks["id"]), actorCompiledBlocks)
+            actor = ActorDecompiler(
+                self, self.getActor(actorCompiledBlocks["id"]), actorCompiledBlocks
+            )
             self.onCreateActor(actor)
             decompilers.append(actor)
 
@@ -296,7 +334,7 @@ class Kitten3WorkDecompiler:
         self.onFinish()
         return self.work
 
-    def getActor(self, actorID:str) -> dict:
+    def getActor(self, actorID: str) -> dict:
         # 获取角色或场景信息
         theatre: dict = self.work["theatre"]
         try:
@@ -313,10 +351,7 @@ class Kitten3WorkDecompiler:
     def writeWorkInfo(self):
         # 写入作品信息
         self.onWriteWorkInfo()
-        self.work["hidden_toolbox"] = {
-            "toolbox": [],
-            "blocks": []
-        }
+        self.work["hidden_toolbox"] = {"toolbox": [], "blocks": []}
         self.work["work_source_label"] = 0
         self.work["sample_id"] = ""
         self.work["project_name"] = self.workInfo["name"]
@@ -346,463 +381,27 @@ class Kitten3WorkDecompiler:
             "video",
             "wood",
             "cognitive",
-            "ai_lab"
+            "ai_lab",
         ]
 
     # 可扩展的钩子方法
-    def onStart(self): pass
-    def onCreateActor(self, actor): pass
-    def onPrepareActors(self): pass
-    def onStartActors(self): pass
-    def onWriteWorkInfo(self): pass
-    def onClean(self): pass
-    def onFinish(self): pass
+    def onStart(self):
+        pass
 
-def block_test():
-    test_text = """
-{
-    "params": {
-        "OP": "ADD",
-        "A": {
-            "params": {
-                "VALUE": {
-                    "params": {
-                        "NUM": "0"
-                    },
-                    "kind": "domain_block",
-                    "type": "math_number",
-                    "id": "0sT0zksYkF6v6IE7gVjm",
-                    "child_block": [],
-                    "first_evaluation": true,
-                    "done_evaluating": false,
-                    "output_type": 2,
-                    "disabled": false,
-                    "conditions": [],
-                    "procedure_name": "",
-                    "times_left": 0
-                }
-            },
-            "kind": "domain_block",
-            "type": "shadow_number",
-            "id": "dGV30mbqhJriShMjfV6p",
-            "child_block": [],
-            "first_evaluation": true,
-            "done_evaluating": false,
-            "output_type": 2,
-            "disabled": false,
-            "conditions": [],
-            "procedure_name": "",
-            "times_left": 0
-        },
-        "B": {
-            "params": {
-                "NUM": "0"
-            },
-            "kind": "domain_block",
-            "type": "math_number",
-            "id": "z0r7LnFzuhdJ0SCz19yL",
-            "child_block": [],
-            "first_evaluation": true,
-            "done_evaluating": false,
-            "output_type": 2,
-            "disabled": false,
-            "conditions": [],
-            "procedure_name": "",
-            "times_left": 0
-        }
-    },
-    "kind": "domain_block",
-    "type": "math_arithmetic",
-    "id": "T3tFIoiTx6euaUrBYW44",
-    "child_block": [],
-    "first_evaluation": true,
-    "done_evaluating": false,
-    "output_type": 2,
-    "disabled": false,
-    "conditions": [],
-    "procedure_name": "",
-    "times_left": 0
-}
-"""
+    def onCreateActor(self, actor):
+        pass
 
-    compiled_block = json.loads(test_text)
-    decompiler = BlockDecompiler(compiled_block)
-    print(ET.tostring(decompiler.toxml(), encoding="unicode"))
+    def onPrepareActors(self):
+        pass
 
-if False:
-    block_test()
+    def onStartActors(self):
+        pass
 
-def work_test():
-    test_txt = """{
-    "version": 16,
-    "application_version": "3.8.17",
-    "work_type": "KITTEN",
-    "width": 620,
-    "height": 900,
-    "type": 1,
-    "project_name": "春风得意-5",
-    "theatre": {
-        "current_entity": "aafed029-7038-4f39-a000-f33497a21390",
-        "current_scene": "b5e60282-a2d1-478b-802d-a30e77d67e6b",
-        "scenes_order": [
-            "b5e60282-a2d1-478b-802d-a30e77d67e6b"
-        ],
-        "scenes": {
-            "b5e60282-a2d1-478b-802d-a30e77d67e6b": {
-                "id": "b5e60282-a2d1-478b-802d-a30e77d67e6b",
-                "current_style_id": "75bde55d-e11c-4fa3-87c9-dd6d7da53fd3",
-                "name": "背景",
-                "styles": [
-                    "75bde55d-e11c-4fa3-87c9-dd6d7da53fd3"
-                ],
-                "actors": [
-                    "aafed029-7038-4f39-a000-f33497a21390"
-                ],
-                "x": 0,
-                "y": 0,
-                "scale": 100,
-                "rotation": 0,
-                "rotation_type": 0,
-                "draggable": false,
-                "visible": true,
-                "screen_name": "屏幕",
-                "workspace_offset": {
-                    "x": 100,
-                    "y": 50
-                }
-            }
-        },
-        "actors": {
-            "aafed029-7038-4f39-a000-f33497a21390": {
-                "id": "aafed029-7038-4f39-a000-f33497a21390",
-                "current_style_id": "01033c29-f6d5-442a-a9db-db3ee9637075",
-                "name": "新角色",
-                "styles": [
-                    "01033c29-f6d5-442a-a9db-db3ee9637075"
-                ],
-                "x": 0,
-                "y": 0,
-                "scale": 100,
-                "rotation": 0,
-                "rotation_type": 0,
-                "draggable": false,
-                "visible": true,
-                "lock": false,
-                "workspace_offset": {
-                    "x": 206,
-                    "y": 132
-                }
-            }
-        },
-        "videos": {},
-        "styles": {
-            "75bde55d-e11c-4fa3-87c9-dd6d7da53fd3": {
-                "id": "75bde55d-e11c-4fa3-87c9-dd6d7da53fd3",
-                "name": "春风得意",
-                "rotate_center": {
-                    "x": 0,
-                    "y": 0
-                },
-                "pivot": {
-                    "x": 0,
-                    "y": 0
-                },
-                "url": "https://static.codemao.cn/kitten/BJ2dhh8MU",
-                "cdn_url": "https://static.codemao.cn/kitten/BJ2dhh8MU"
-            },
-            "01033c29-f6d5-442a-a9db-db3ee9637075": {
-                "id": "01033c29-f6d5-442a-a9db-db3ee9637075",
-                "name": "新角色",
-                "rotate_center": {
-                    "x": 0,
-                    "y": 0
-                },
-                "url": "https://creation.bcmcdn.com/120/kitten/d2ViXzIwMDJfODE2MDgxMDYxXzBfMTc4MTMyNTA3NjE2OF8wZDJjYjAxOQ==",
-                "cdn_url": "https://creation.bcmcdn.com/120/kitten/d2ViXzIwMDJfODE2MDgxMDYxXzBfMTc4MTMyNTA3NjE2OF8wZDJjYjAxOQ=="
-            }
-        },
-        "style_collections": {}
-    },
-    "variables": {
-        "3ee108a2-79e2-4aa9-8db0-f26352952380": {
-            "id": "3ee108a2-79e2-4aa9-8db0-f26352952380",
-            "type": "any",
-            "is_global": false,
-            "scale": 1,
-            "visible": true,
-            "theme": "common",
-            "value": 0,
-            "name": "my_value1",
-            "offset": {
-                "x": 0,
-                "y": 0
-            },
-            "current_entity": "aafed029-7038-4f39-a000-f33497a21390",
-            "position": {
-                "x": 10,
-                "y": 10
-            }
-        }
-    },
-    "variable_order": [
-        "3ee108a2-79e2-4aa9-8db0-f26352952380"
-    ],
-    "cloud_variables": {},
-    "audio": {
-        "0ba8b9d3-715c-467f-8598-97f9b21827bd": {
-            "id": "0ba8b9d3-715c-467f-8598-97f9b21827bd",
-            "name": "爱心",
-            "effects": [],
-            "playback_rate": 1,
-            "volume": 1,
-            "cdn_url": "https://static.codemao.cn/kitten/material_060918_cn/sound/1_sound_effect/34闪亮04.mp3",
-            "url": "https://static.codemao.cn/kitten/material_060918_cn/sound/1_sound_effect/34闪亮04.mp3"
-        },
-        "74ea05ef-f1cb-47ac-846b-404d00c07b75": {
-            "id": "74ea05ef-f1cb-47ac-846b-404d00c07b75",
-            "name": "春日出游",
-            "effects": [],
-            "playback_rate": 1,
-            "volume": 1,
-            "cdn_url": "https://static.codemao.cn/kitten/ryb42bOGU.audio/mp3",
-            "url": "https://static.codemao.cn/kitten/ryb42bOGU.audio/mp3"
-        }
-    },
-    "audio_order": [
-        "74ea05ef-f1cb-47ac-846b-404d00c07b75",
-        "0ba8b9d3-715c-467f-8598-97f9b21827bd"
-    ],
-    "matrix": {},
-    "models": {},
-    "toolbox": {
-        "block_ai_classification": false,
-        "block_ai_game": false,
-        "block_hardware_arduino": false,
-        "block_hardware_weeemake": false,
-        "block_hardware_microbit": false,
-        "block_hardware_ideali": false,
-        "block_hardware_ideali_asr": false,
-        "block_hardware_ideali_smartcar": false,
-        "block_hardware_grovezero": false,
-        "cloud_variable": false,
-        "cloud_list": false,
-        "advanced": false,
-        "camera": false,
-        "video": false,
-        "wood": false,
-        "cognitive": false,
-        "ai_lab": false,
-        "physics": false
-    },
-    "hardware_type": "",
-    "is_partial": false,
-    "compile_result": [
-        {
-            "id": "b5e60282-a2d1-478b-802d-a30e77d67e6b",
-            "procedures": {},
-            "compiled_block_map": {}
-        },
-        {
-            "id": "aafed029-7038-4f39-a000-f33497a21390",
-            "procedures": {},
-            "compiled_block_map": {
-                "RPZP5Dcp7fS6MlhmlQLc": {
-                    "params": {},
-                    "kind": "domain_block",
-                    "type": "start_on_click",
-                    "id": "RPZP5Dcp7fS6MlhmlQLc",
-                    "next_block": {
-                        "params": {},
-                        "kind": "repeat_forever",
-                        "type": "repeat_forever",
-                        "id": "N1HcY1OEnjiHBMIhHPNu",
-                        "child_block": [
-                            {
-                                "params": {},
-                                "kind": "controls_if",
-                                "type": "controls_if",
-                                "id": "dIQA0cl6wcLUG11U7BZY",
-                                "child_block": [
-                                    {
-                                        "params": {},
-                                        "kind": "domain_block",
-                                        "type": "self_next_style",
-                                        "id": "rB1obtMq0MZ0IYN8DZTU",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 0,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    },
-                                    {
-                                        "params": {
-                                            "time": {
-                                                "params": {
-                                                    "NUM": "0"
-                                                },
-                                                "kind": "domain_block",
-                                                "type": "math_number",
-                                                "id": "W3syZzqTEb0ocQSS0KSd",
-                                                "child_block": [],
-                                                "first_evaluation": true,
-                                                "done_evaluating": false,
-                                                "output_type": 2,
-                                                "disabled": false,
-                                                "conditions": [],
-                                                "procedure_name": "",
-                                                "times_left": 0
-                                            }
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "wait",
-                                        "id": "sjJC00tNQiKa883W8M4b",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 0,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    },
-                                    {
-                                        "params": {
-                                            "color": "#cc66cc"
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "self_set_pen_color",
-                                        "id": "3TaMO346r7t8QgPs8UIr",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 0,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    },
-                                    {
-                                        "params": {
-                                            "steps": {
-                                                "params": {
-                                                    "NUM": "10"
-                                                },
-                                                "kind": "domain_block",
-                                                "type": "math_number",
-                                                "id": "nd3S6ct23nMrgsgSQQMT",
-                                                "child_block": [],
-                                                "first_evaluation": true,
-                                                "done_evaluating": false,
-                                                "output_type": 2,
-                                                "disabled": false,
-                                                "conditions": [],
-                                                "procedure_name": "",
-                                                "times_left": 0
-                                            }
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "self_go_forward",
-                                        "id": "IRiVBIA1NAAaTDyLxph4",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 0,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    }
-                                ],
-                                "first_evaluation": true,
-                                "done_evaluating": false,
-                                "output_type": 0,
-                                "disabled": false,
-                                "conditions": [
-                                    {
-                                        "params": {
-                                            "BOOL": "TRUE"
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "logic_boolean",
-                                        "id": "rkuI1moKQ9G6uvNgYIG5",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 2,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    },
-                                    {
-                                        "params": {
-                                            "BOOL": "TRUE"
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "logic_boolean",
-                                        "id": "sllWUlb2LIh4g1OJB8T1",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 2,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    },
-                                    {
-                                        "params": {
-                                            "BOOL": "TRUE"
-                                        },
-                                        "kind": "domain_block",
-                                        "type": "logic_boolean",
-                                        "id": "Xb6n8AJcNv1EYmeiHPOr",
-                                        "child_block": [],
-                                        "first_evaluation": true,
-                                        "done_evaluating": false,
-                                        "output_type": 2,
-                                        "disabled": false,
-                                        "conditions": [],
-                                        "procedure_name": "",
-                                        "times_left": 0
-                                    }
-                                ],
-                                "procedure_name": "",
-                                "times_left": 0
-                            }
-                        ],
-                        "first_evaluation": true,
-                        "done_evaluating": false,
-                        "output_type": 0,
-                        "disabled": false,
-                        "conditions": [],
-                        "procedure_name": "",
-                        "times_left": 0
-                    },
-                    "child_block": [],
-                    "first_evaluation": true,
-                    "done_evaluating": false,
-                    "output_type": 0,
-                    "disabled": false,
-                    "conditions": [],
-                    "procedure_name": "",
-                    "times_left": 0
-                }
-            }
-        }
-    ],
-    "ai_lab": {}
-}"""
+    def onWriteWorkInfo(self):
+        pass
 
-    compiled_work = json.loads(test_txt)
-    decompiler = Kitten3WorkDecompiler({"name": "测试作品"}, compiled_work)
-    decompiled_work = decompiler.start()
-    with open("decompiled_work.json", "w", encoding="utf-8") as f:
-        json.dump(decompiled_work, f, ensure_ascii=False, indent=4)
+    def onClean(self):
+        pass
 
-if __name__ == "__main__":
-    # 测试反编译器
-    work_test()
+    def onFinish(self):
+        pass
