@@ -174,7 +174,9 @@ class Procedures2CallNoReturnDecompiler(BlockDecompiler):
             elif isinstance(value, dict):
                 value_element = ET.SubElement(block, "value", {"name": f"ARG{arg_id}"})
                 value_element.append(getBlockDecompiler(value).toxml())
-            mutation.append(ET.Element("procedures_2_parameter_shadow", {"name": key}))
+            parameter_shadow_element = ET.Element("procedures_2_parameter_shadow", {"name": key})
+            parameter_shadow_element.text = ""
+            mutation.append(parameter_shadow_element)
             arg_id += 1
     def toxml(self):
         block =  super().toxml()
