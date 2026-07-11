@@ -141,6 +141,7 @@ class Procedures2DefDecompiler(BlockDecompiler):
         parm_id = 0
         for key, value in self.params.items():
             arg_element = ET.SubElement(mutation, "arg", {"name": key})
+            arg_element.text = ""
             value_element = ET.SubElement(block, "value", {"name": f"PARAMS{parm_id}"})
             value_element.append(
                 ET.fromstring(
@@ -149,7 +150,7 @@ class Procedures2DefDecompiler(BlockDecompiler):
                 )
             value_element.append(
                 ET.fromstring(
-                    f"<shadow type= \"procedures_2_stable_parameter\" inline= \"{value}\"><field name= \"param_name\">{key}</field></shadow>"
+                    f"<block type= \"procedures_2_stable_parameter\" inline= \"{value}\"><field name= \"param_name\">{key}</field></block>"
                     )
                 )
             parm_id +=1
