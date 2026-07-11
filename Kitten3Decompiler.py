@@ -133,7 +133,7 @@ class TextJoinDecompiler(BlockDecompiler):
         })
         return block
 
-class Procedures2DefCallDecompiler(BlockDecompiler):
+class Procedures2DefDecompiler(BlockDecompiler):
     """定义函数的积木的反编译"""
     def parms(self, block):
         # return super().parms(block)
@@ -192,7 +192,7 @@ SPECIAL_DECOMPILER_MAP = {
     "controls_if": ControlsIfDecompiler,
     "controls_if_no_else": ControlsIfNoElseDecompiler,
     "text_join": TextJoinDecompiler,
-    "procedures_2_defnoreturn": Procedures2DefCallDecompiler,
+    "procedures_2_defnoreturn": Procedures2DefDecompiler,
     "procedures_2_callnoreturn": Procedures2CallNoReturnDecompiler,
     "procedures_2_callreturn": Procedures2CallReturnDecompiler
 }
