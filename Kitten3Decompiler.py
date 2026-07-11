@@ -73,7 +73,12 @@ class BlockDecompiler:
                 block.append(self.create_field(key, value))
             elif isinstance(value, dict):
                 value_element = ET.SubElement(block, "value", {"name": key})
-                value_element.append(getBlockDecompiler(value).toxml())
+                value_block = getBlockDecompiler(value)
+                if value_block.get_block_label() == "block":
+                    # value_element.append()
+                    # 这里应该生成一个shadow或 empty 块
+                    pass
+                value_element.append(value_block.toxml())
 
     def __str__(self):
         return ET.tostring(self.toxml(), encoding="unicode")
