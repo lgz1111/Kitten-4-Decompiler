@@ -102,12 +102,14 @@ class ControlsIfDecompiler(BlockDecompiler):
         condition_id = 0
         for child in self.conditions:
             condition = ET.SubElement(block, "value", {"name": f"IF{condition_id}"})
-            condition.append(getBlockDecompiler(child).toxml())
-            condition.append(
-                ET.fromstring(
-                    '<empty type= "logic_empty" editable= "false"><field name= "BOOL"></field></empty>'
+            value_block = getBlockDecompiler(child)
+            condition.append(value_block.toxml())
+            if value_block.get_block_label() == "block":
+                condition.append(
+                    ET.fromstring(
+                        '<empty type= "logic_empty" editable= "false" visible= \"visible\"><field name= "BOOL"></field></empty>'
+                    )
                 )
-            )
             condition_id += 1
 
     def toxml(self):
