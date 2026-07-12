@@ -89,7 +89,7 @@ class ControlsIfDecompiler(BlockDecompiler):
     def children(self, block):
         statement_id = 0
         for child in self.child_block:
-            if statement_id == len(self.child_block):
+            if statement_id + 1 == len(self.child_block):
                 statement_name = "ELSE"
             else:
                 statement_name = f"DO{statement_id}"
