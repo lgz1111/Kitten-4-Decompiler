@@ -113,8 +113,13 @@ class ControlsIfDecompiler(BlockDecompiler):
     def toxml(self):
         block = super().toxml()
         self.decompile_conditions(block)
+        else_if_num = len(self.conditions) - 1
+        if else_if_num == 0:
+            mutation_parameters = {"else": "1"}
+        else:
+            mutation_parameters = {"elseif": str(else_if_num), "else": "1"}
         self.mutation = ET.SubElement(
-            block, "mutation", {"elseif": str(len(self.conditions) - 1), "else": "1"}
+            block, "mutation", mutation_parameters
         )
         return block
 
